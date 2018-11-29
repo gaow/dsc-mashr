@@ -19,16 +19,29 @@ current: R(V = mashr::estimate_null_correlation($(m_data), $(Ulist), max_iter = 
     tol: 1e-2
     $V: V
 
-mle (current): R(V = mashr::estimate_null_correlation_mle($(m_data), $(Ulist), max_iter = max_iter, tol = tol))
+mle (current): R(V = mashr::estimate_null_correlation_mle($(m_data), $(Ulist), max_iter = max_iter, tol = tol);
+		 mle_data = mashr::mash_update_data($(m_data), V = V$V);
+		 V$mash.model$result = mash_compute_posterior_matrices(mle_data, V$mash.model))
+
 mle_em (current): R(V = mashr::estimate_null_correlation_mle_em($(m_data), $(Ulist), max_iter = max_iter, tol = tol))
 
-mashloglik: R(get_loglik($V$mash.model))
+mashloglik: R(loglik = get_loglik($(V)$mash.model);
+              loglik_true =  get_loglik($(v_true)$m.model))
+   $loglik: loglik
+   $true_loglik: loglik_true
 
-FrobeniusNorm: R(norm($V$V, $v_true, type='F'))
+FrobeniusNorm: R(error = norm($(V)$V, $(v_true)$V, type='F'))
+   $error: error
 
-ROC: R(ROC.table($data$B, $V$mash.model))
+ROC: R(roc_seq = ROC.table($(data)$B, $(V)$mash.model);
+       true_seq = ROC.table($(data)$B, $(v_true)$m.model))
+   $roc: roc_seq
+   $true_roc: true_seq
 
-RRMSE: R(sqrt(mean(($data$B - $V$mash.model$result$PosteriorMean)^2)/mean(($data$B - $data$Bhat)^2)))
+RRMSE: R(rrmse = sqrt(mean(($(data)$B - $(V)$mash.model$result$PosteriorMean)^2)/mean(($(data)$B - $(data)$Bhat)^2));
+         rrmse_true = sqrt(mean(($(data)$B - $(v_true)$m.model$result$PosteriorMean)^2)/mean(($(data)$B - $(data)$Bhat)^2)))
+   $rrmse: rrmse
+   $true_rrmse: rrmse_true
 
 DSC:
     define: 
