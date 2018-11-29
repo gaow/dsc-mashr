@@ -22,6 +22,14 @@ current: R(V = mashr::estimate_null_correlation($(m_data), $(Ulist), max_iter = 
 mle (current): R(V = mashr::estimate_null_correlation_mle($(m_data), $(Ulist), max_iter = max_iter, tol = tol))
 mle_em (current): R(V = mashr::estimate_null_correlation_mle_em($(m_data), $(Ulist), max_iter = max_iter, tol = tol))
 
+mashloglik: R(get_loglik($V$mash.model))
+
+FrobeniusNorm: R(norm($V$V, $v_true, type='F'))
+
+ROC: R(ROC.table($data$B, $V$mash.model))
+
+RRMSE: R(sqrt(mean(($data$B - $V$mash.model$result$PosteriorMean)^2)/mean(($data$B - $data$Bhat)^2)))
+
 DSC:
     define: 
         estimate: simple, current, mle, mle_em
