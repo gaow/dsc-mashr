@@ -21,7 +21,7 @@ current: R(V = mashr::estimate_null_correlation($(m_data), $(Ulist), max_iter = 
 
 mle (current): R(V = mashr::estimate_null_correlation_mle($(m_data), $(Ulist), max_iter = max_iter, tol = tol);
 		 mle_data = mashr::mash_update_data($(m_data), V = V$V);
-		 V$mash.model$result = mash_compute_posterior_matrices(mle_data, V$mash.model))
+		 V$mash.model$result = mash_compute_posterior_matrices(V$mash.model, mle_data)$result)
 
 mle_em (current): R(V = mashr::estimate_null_correlation_mle_em($(m_data), $(Ulist), max_iter = max_iter, tol = tol))
 
