@@ -25,28 +25,37 @@ mle (current): R(V = mashr::estimate_null_correlation_mle($(m_data), $(Ulist), m
 
 mle_em (current): R(V = mashr::estimate_null_correlation_mle_em($(m_data), $(Ulist), max_iter = max_iter, tol = tol))
 
-mashloglik: R(loglik = get_loglik($(V)$mash.model);
-              loglik_true =  get_loglik($(v_true)$m.model))
+mashloglik: R( loglik = c(get_loglik($(v_true)$m.model), get_loglik($(V)$mash.model)))
    $loglik: loglik
-   $true_loglik: loglik_true
 
 FrobeniusNorm: R(error = norm($(V)$V, $(v_true)$V, type='F'))
    $error: error
 
-ROC: R(roc_seq = ROC.table($(data)$B, $(V)$mash.model);
-       true_seq = ROC.table($(data)$B, $(v_true)$m.model))
-   $roc: roc_seq
-   $true_roc: true_seq
+ROC: R(ROC.table = function(data, model){
+                       sign.test = data*model$result$PosteriorMean;
+                       thresh.seq = seq(0, 1, by=0.005)[-1];
+                       m.seq = matrix(0,length(thresh.seq), 2);
+                       colnames(m.seq) = c('TPR', 'FPR');
+                       for(t in 1:length(thresh.seq)){
+                           m.seq[t,] = c(sum(sign.test>0 & model$result$lfsr <= thresh.seq[t])/sum(data!=0),
+                           sum(data==0 & model$result$lfsr <=thresh.seq[t])/sum(data==0));
+                       }
+                       return(m.seq);
+       };
+       roc_seq = ROC.table($(data)$B, $(V)$mash.model);
+       true_seq = ROC.table($(data)$B, $(v_true)$m.model);
+       ROCs = cbind(true_seq, roc_seq))
+   $roc: ROCs
 
-RRMSE: R(rrmse = sqrt(mean(($(data)$B - $(V)$mash.model$result$PosteriorMean)^2)/mean(($(data)$B - $(data)$Bhat)^2));
-         rrmse_true = sqrt(mean(($(data)$B - $(v_true)$m.model$result$PosteriorMean)^2)/mean(($(data)$B - $(data)$Bhat)^2)))
+RRMSE: R(rrmse = c(sqrt( mean( ($(data)$B - $(v_true)$m.model$result$PosteriorMean)^2 )/mean( ($(data)$B - $(data)$Bhat)^2 )), 
+                   sqrt(mean(($(data)$B - $(V)$mash.model$result$PosteriorMean)^2)/mean(($(data)$B - $(data)$Bhat)^2))))
    $rrmse: rrmse
-   $true_rrmse: rrmse_true
 
 DSC:
     define: 
         estimate: simple, current, mle, mle_em
-    run: simulate * estimate
+	summary: mashloglik, FrobeniusNorm, ROC, RRMSE
+    run: simulate * estimate * summary
     replicate: 50
     R_libs: assertthat, MASS, mashr@zouyuxin/mashr, clusterGeneration
     exec_path: code
