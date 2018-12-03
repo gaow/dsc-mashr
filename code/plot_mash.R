@@ -1,4 +1,6 @@
 pdf(debug_plots)
-plot(V$mash.model$result$PosteriorMean[,1])
-plot(1:4)
+heatmap(V$mash.model$fitted_g$Ulist[['ED_PCA_1']])
+heatmap(V$mash.model$fitted_g$Ulist[['ED_PCA_2']])
+barplot(mashr::get_estimated_pi(V$mash.model), las=2, cex.names = 0.7)
+heatmap(mashr::get_pairwise_sharing(V$mash.model))
 dev.off()

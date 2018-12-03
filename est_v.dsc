@@ -14,7 +14,7 @@ simulate_toy (simulate_simple):
     p: 2
 
 simple: R(V = list();
-          V$V = mashr::estimate_null_correlation_simple($(m_data)); 
+          V$V = mashr::estimate_null_correlation_simple($(m_data));
           simple_data = mashr::mash_update_data($(m_data), V = V$V);
           V$mash.model = mashr::mash(simple_data, $(Ulist))) \
           + plot_mash.R
@@ -38,7 +38,7 @@ oracle: R(V = list();
 
 mle (current): R(V = mashr::estimate_null_correlation_mle($(m_data), $(Ulist), max_iter = max_iter, tol = tol);
 		 mle_data = mashr::mash_update_data($(m_data), V = V$V);
-		 V$mash.model$result = mashr::mash_compute_posterior_matrices(V$mash.model, mle_data)$result) \
+		 V$mash.model$result = mashr::mash_compute_posterior_matrices(V$mash.model, mle_data)) \
           + plot_mash.R
 
 mle_em (current): R(V = mashr::estimate_null_correlation_mle_em($(m_data), $(Ulist), max_iter = max_iter, tol = tol)) \
@@ -58,14 +58,14 @@ ROC: ROC_table.R + R(roc_seq = ROC.table($(data)$B, $(V)$mash.model))
    $data: roc_seq
 
 DSC:
-    define: 
+    define:
         simulate: simulate_simple
         estimate: oracle, simple, current, mle
         summary: mashloglik, FrobeniusNorm, RRMSE
     run:
         default: simulate * estimate * (summary, ROC)
         toy: simulate_toy * estimate * (summary, ROC)
-    replicate: 2
-    R_libs: assertthat, MASS, mashr@zouyuxin/mashr, clusterGeneration
+    replicate: 20
+    R_libs: assertthat, MASS, mashr@zouyuxin/mashr, clusterGeneration, stats, graphics
     exec_path: code
     output: est_v
