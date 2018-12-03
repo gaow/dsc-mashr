@@ -24,7 +24,7 @@ DSC:
       cd {cur_dir}
       module load R/3.5.1
     partition: "SBATCH --partition=broadwl"
-    account: "SBATCH --partition=mstephens"
+    account: ""
     submit_cmd: sbatch {job_file}
     submit_cmd_output: "Submitted batch job {job_id}"
     status_cmd: squeue --job {job_id}
