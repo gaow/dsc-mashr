@@ -47,9 +47,8 @@ The complete analysis might take some time to run.
 
 ## Run on RCC midway
 
-Edit the file `config.yaml` to specify resource usage, then on `midway`:
-
+Edit the file `config.yaml` to specify resource usage, then on `midway` login node, run:
 
 ```
-$ ./est_v.dsc --target default -c 4 --host config.yaml
+$ ./est_v.dsc --target default --host config.yaml
 ```
