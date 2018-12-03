@@ -1,62 +1,71 @@
 #!/usr/bin/env dsc
 
-simulate: utils.R + generate_data.R
+simulate_simple: utils.R + U_init_simple.R + mash_init.R
     n: 4000
     p: 5
+    debug_plots: file(pdf)
     $m_data: m.data
-    $v_true: V.true
+    $v_true: Vtrue
     $data: data
     $Ulist: Ulist
+
+simulate_toy (simulate_simple):
+    n: 400
+    p: 2
 
 simple: R(V = list();
           V$V = mashr::estimate_null_correlation_simple($(m_data)); 
           simple_data = mashr::mash_update_data($(m_data), V = V$V);
-          V$mash.model = mashr::mash(simple_data, $(Ulist)))
+          V$mash.model = mashr::mash(simple_data, $(Ulist))) \
+          + plot_mash.R
+    debug_plots: file(pdf)
     $V: V
 
-current: R(V = mashr::estimate_null_correlation($(m_data), $(Ulist), max_iter = max_iter, tol = tol))
+current: R(V = mashr::estimate_null_correlation($(m_data), $(Ulist), max_iter = max_iter, tol = tol)) \
+          + plot_mash.R
     max_iter: 100
     tol: 1e-2
+    debug_plots: file(pdf)
+    $V: V
+
+oracle: R(V = list();
+          V$V = $(v_true);
+          simple_data = mashr::mash_update_data($(m_data), V = V$V);
+          V$mash.model = mashr::mash(simple_data, $(Ulist))) \
+          + plot_mash.R
+    debug_plots: file(pdf)
     $V: V
 
 mle (current): R(V = mashr::estimate_null_correlation_mle($(m_data), $(Ulist), max_iter = max_iter, tol = tol);
 		 mle_data = mashr::mash_update_data($(m_data), V = V$V);
-		 V$mash.model$result = mash_compute_posterior_matrices(V$mash.model, mle_data)$result)
+		 V$mash.model$result = mashr::mash_compute_posterior_matrices(V$mash.model, mle_data)$result) \
+          + plot_mash.R
 
-mle_em (current): R(V = mashr::estimate_null_correlation_mle_em($(m_data), $(Ulist), max_iter = max_iter, tol = tol))
+mle_em (current): R(V = mashr::estimate_null_correlation_mle_em($(m_data), $(Ulist), max_iter = max_iter, tol = tol)) \
+          + plot_mash.R
 
-mashloglik: R( loglik = c(get_loglik($(v_true)$m.model), get_loglik($(V)$mash.model)))
-   $loglik: loglik
+mashloglik: R(loglik = ashr::get_loglik($(V)$mash.model))
+   $score: loglik
 
-FrobeniusNorm: R(error = norm($(V)$V, $(v_true)$V, type='F'))
-   $error: error
+FrobeniusNorm: R(error = norm($(V)$V - $(v_true), type='F'))
+   $score: error
 
-ROC: R(ROC.table = function(data, model){
-                       sign.test = data*model$result$PosteriorMean;
-                       thresh.seq = seq(0, 1, by=0.005)[-1];
-                       m.seq = matrix(0,length(thresh.seq), 2);
-                       colnames(m.seq) = c('TPR', 'FPR');
-                       for(t in 1:length(thresh.seq)){
-                           m.seq[t,] = c(sum(sign.test>0 & model$result$lfsr <= thresh.seq[t])/sum(data!=0),
-                           sum(data==0 & model$result$lfsr <=thresh.seq[t])/sum(data==0));
-                       }
-                       return(m.seq);
-       };
-       roc_seq = ROC.table($(data)$B, $(V)$mash.model);
-       true_seq = ROC.table($(data)$B, $(v_true)$m.model);
-       ROCs = cbind(true_seq, roc_seq))
-   $roc: ROCs
+RRMSE: R(rrmse = sqrt(mean(($(data)$B - $(V)$mash.model$result$PosteriorMean)^2)/mean(($(data)$B - $(data)$Bhat)^2)))
+   $score: rrmse
 
-RRMSE: R(rrmse = c(sqrt( mean( ($(data)$B - $(v_true)$m.model$result$PosteriorMean)^2 )/mean( ($(data)$B - $(data)$Bhat)^2 )), 
-                   sqrt(mean(($(data)$B - $(V)$mash.model$result$PosteriorMean)^2)/mean(($(data)$B - $(data)$Bhat)^2))))
-   $rrmse: rrmse
+# This is separated from above summary functions because the query results will be neater this way
+ROC: ROC_table.R + R(roc_seq = ROC.table($(data)$B, $(V)$mash.model))
+   $data: roc_seq
 
 DSC:
     define: 
-        estimate: simple, current, mle, mle_em
-	summary: mashloglik, FrobeniusNorm, ROC, RRMSE
-    run: simulate * estimate * summary
-    replicate: 50
+        simulate: simulate_simple
+        estimate: oracle, simple, current, mle
+        summary: mashloglik, FrobeniusNorm, RRMSE
+    run:
+        default: simulate * estimate * (summary, ROC)
+        toy: simulate_toy * estimate * (summary, ROC)
+    replicate: 2
     R_libs: assertthat, MASS, mashr@zouyuxin/mashr, clusterGeneration
     exec_path: code
     output: est_v
