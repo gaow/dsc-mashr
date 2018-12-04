@@ -53,5 +53,5 @@ simulate:
   instances_per_job: 20
 
 mle:
-  time_per_instance: 1h
+  time_per_instance: 3h
   instances_per_job: 1
