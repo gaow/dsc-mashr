@@ -11,7 +11,7 @@ simulate_simple: utils.R + U_init_simple.R + mash_init.R
 
 simulate_toy (simulate_simple):
     n: 400
-    p: 2
+    p: 3
 
 simple: R(V = list();
           V$V = mashr::estimate_null_correlation_simple($(m_data));
@@ -66,6 +66,6 @@ DSC:
         default: simulate * estimate * (summary, ROC)
         toy: simulate_toy * estimate * (summary, ROC)
     replicate: 20
-    R_libs: assertthat, MASS, mashr@zouyuxin/mashr, clusterGeneration, stats, graphics
+    R_libs: assertthat, MASS, mashr@zouyuxin/mashr, clusterGeneration, stats, graphics, corrplot
     exec_path: code
     output: est_v
